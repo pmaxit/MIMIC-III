@@ -3,9 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from transformers import BertModel, BertConfig
+from utils import create_emb_layer
+
 
 class BiLSTM(nn.Module):
-    def __init__(self, V, E, C, h=50, bidirectional=True, dropout=0.5):
+    def __init__(self, V, E, C, h=50, bidirectional=True, dropout=0.5, weights_matrix=None):
         """
             V | Vocab Size
             E | Embedding Size
@@ -17,9 +19,16 @@ class BiLSTM(nn.Module):
             L | Max Seqnelence length
             H | 2*h or h depending on bidrectional
         
+            Option to load external word2vec embeddings
         """
         super().__init__()
-        self.embed = nn.Embedding(V, E)
+        if weights_matrix != None:
+            print("loading embedding layer from matrix")
+            self.embed,_,_ = create_emb_layer(weights_matrix, True)
+        else:
+            print("Creating embedding layer")
+            self.embed = nn.Embedding(V, E)
+            
         self.encoder = nn.LSTM(
             input_size = E, 
             hidden_size = h,
@@ -71,7 +80,7 @@ class BiLSTMWithBertEmbedding(nn.Module):
         self.embed = nn.Embedding(V, E)
         self.bert = BertModel(config)
         self.encoder = nn.LSTM(
-            input_size = E, 
+            input_size = 768, 
             hidden_size = h,
             bidirectional=bidirectional,
             batch_first = True
@@ -88,8 +97,6 @@ class BiLSTMWithBertEmbedding(nn.Module):
         mask = input_ids != 0                           # B X L
 
         # just replacing the embedding layers with bert layer
-        import pdb
-        pdb.set_trace()
         #x = self.embed(x)                       # B X L X E
         x = self.bert(input_ids, attention_mask )[0]
 

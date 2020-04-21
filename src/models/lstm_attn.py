@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from utils import create_emb_layer
 
 
 MASK_VALUE  = -1e-18
 
+
+
 class SelfAttentionLSTM(nn.Module):
-    def __init__(self, V, E, C, h=50, bidirectional=True, dropout=0.5):
+    def __init__(self, V, E, C, h=50, bidirectional=True, dropout=0.5, weights_matrix= None):
         """
             V | Vocab Size
             E | Embedding Size
@@ -21,7 +24,11 @@ class SelfAttentionLSTM(nn.Module):
         
         """
         super().__init__()
-        self.embed = nn.Embedding(V, E)
+        if type(weights_matrix) != type(None):
+            print("Embedding matrix loaded ")
+            self.embed,_,_ = create_emb_layer(weights_matrix)
+        else:
+            self.embed = nn.Embedding(V, E)
         self.encoder = nn.LSTM(
             input_size = E, 
             hidden_size = h,

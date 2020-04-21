@@ -25,10 +25,11 @@ class FocalLoss(nn.Module):
 
     
 class ICD_Loss(nn.Module):
-    def __init__(self, ignore_index=None):
+    def __init__(self, ignore_index=None, thres=0.2):
         super().__init__()
         self.ignore_index = ignore_index
         self.loss_func = BCEWithLogitsLossFlat()
+        self.thres = 0.2
 
     def forward(self,logits, labels):
         # logits is shape of 4 x 19 and labels is 19 with one hot encoding vector
