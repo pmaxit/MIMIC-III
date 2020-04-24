@@ -61,6 +61,51 @@ def get_glove_matrix(glove_path="", vocab=None, emb_dim = 50):
         
     return weights_matrix
 
+
+class FastAIBertTokenizer2(Transform):
+    """ Wrapper around Bert Tokenizer to be compatible with Fastai 
+    
+        Bert Tokenization adds ## extra symbol to handle inner word embeddings
+        embeddings:  em ## bed ##dings
+    """
+    def __init__(self, tokenizer: BertTokenizer, split_char = " ", max_seq_len:int = 5000,  fill_to_max=True, **kwargs):
+        self.max_seq_len = max_seq_len
+        self.split_char = split_char
+        self.tokenizer = tokenizer
+        self.sentence_idx = 0
+        self.fill_to_max = fill_to_max
+
+    def encodes(self, sentence):
+        
+        # Truncating it in between
+        # by default use the maximum length
+        # if sentence is list of sentences then do special care
+        if not isinstance(sentence, list):
+            sentence = L(sentence)
+        result = [ self.tokenizer.encode_plus(s,return_tensors='pt', 
+                    max_length = self.max_seq_len , pad_to_max_length=True)  for s in sentence ]
+        
+        # it may contain 10 x 512
+        input_ids = torch.cat([r['input_ids'] for r in result],1)
+        attention_mask = torch.cat([r['attention_mask'] for r in result],1)
+
+        return (TensorText(input_ids), attention_mask)
+        
+        # Needed to add index because by default it returns list of list
+        # in our case, we only have one sentence
+        # always return the attention mask and fill to maximum
+        return (TensorText(result['input_ids'][0]) , result['attention_mask'][0])
+    
+
+    def decodes(self, tokens):
+        if not isinstance(tokens, list):
+            tokens = L(tokens)
+        result = ""
+        for l in range(0,tokens[0].shape[1],512):
+            result = result + TitledStr(self.tokenizer.decode(tokens[0][0,l:l+512],skip_special_tokens=True))
+
+        return result
+
 class FastAIBertTokenizer(Transform):
     """ Wrapper around Bert Tokenizer to be compatible with Fastai 
     
@@ -74,14 +119,19 @@ class FastAIBertTokenizer(Transform):
         self.sentence_idx = 0
         self.fill_to_max = fill_to_max
 
-
     def encodes(self, sentence):
+        
+        # Truncating it in between
+        # by default use the maximum length
         result = self.tokenizer.encode_plus(sentence,return_tensors='pt', 
-                    max_length = self.max_seq_len, pad_to_max_length=self.fill_to_max)
+                    max_length = self.max_seq_len , pad_to_max_length=True) 
         
         # Needed to add index because by default it returns list of list
         # in our case, we only have one sentence
-        if self.fill_to_max: 
+        # always return the attention mask and fill to maximum
+        return (TensorText(result['input_ids'][0]) , result['attention_mask'][0])
+    
+        if self.fill_to_max:
             return (TensorText(result['input_ids'][0]) , result['attention_mask'][0])
         else:
             return TensorText(result['input_ids'][0])

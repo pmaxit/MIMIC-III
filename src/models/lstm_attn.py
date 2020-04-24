@@ -10,7 +10,7 @@ MASK_VALUE  = -1e-18
 
 
 class SelfAttentionLSTM(nn.Module):
-    def __init__(self, V, E, C, h=50, bidirectional=True, dropout=0.5, weights_matrix= None):
+    def __init__(self, V, E, C, h=100, bidirectional=True, dropout=0.5, weights_matrix= None):
         """
             V | Vocab Size
             E | Embedding Size

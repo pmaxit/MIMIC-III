@@ -21,7 +21,7 @@ class BiLSTM(nn.Module):
         
             Option to load external word2vec embeddings
         """
-        super().__init__()
+        super(BiLSTM, self).__init__()
         if weights_matrix != None:
             print("loading embedding layer from matrix")
             self.embed,_,_ = create_emb_layer(weights_matrix, True)
